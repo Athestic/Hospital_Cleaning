@@ -1,41 +1,31 @@
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:typed_data';
 
-void main() {
-  runApp(MaterialApp(
-    home: MyApp(),
-  ));
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+  runApp(MyApp(isLoggedIn: isLoggedIn));
 }
 
-class MyApp extends StatefulWidget {
-  @override
-  _MyAppState createState() => _MyAppState();
-}
+class MyApp extends StatelessWidget {
+  final bool isLoggedIn;
 
-class _MyAppState extends State<MyApp> {
-  bool _isLoggedIn = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkLoginStatus();
-  }
-
-  void _checkLoginStatus() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    });
-  }
+  MyApp({required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
-    return _isLoggedIn ? AdminDashboard() : AdminLogin();
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.teal),
+      home: isLoggedIn ?   AdminLogin():AdminDashboard(),
+    );
   }
 }
-
 class AdminLogin extends StatefulWidget {
   @override
   _AdminLoginState createState() => _AdminLoginState();
@@ -70,9 +60,9 @@ class _AdminLoginState extends State<AdminLogin> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Admin ',
+          'Admin Login',
           style: TextStyle(color: Colors.teal, fontFamily: 'Poppins', fontWeight: FontWeight.bold),
-                ),
+        ),
       ),
       body: Stack(
         children: [
@@ -146,7 +136,13 @@ class _AdminLoginState extends State<AdminLogin> {
                               ),
                             SizedBox(height: 20),
                             ElevatedButton(
-
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.teal,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18.0),
+                                ),
+                                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                              ),
                               onPressed: () async {
                                 String userId = emailController.text;
                                 String password = passwordController.text;
@@ -154,7 +150,7 @@ class _AdminLoginState extends State<AdminLogin> {
                                 if (userId == 'admin@123' && password == 'rama@123') {
                                   SharedPreferences prefs = await SharedPreferences.getInstance();
                                   prefs.setBool('isLoggedIn', true);
-                                  prefs.setString('adminName', 'Dr. Aprajita Chauhan',);
+                                  prefs.setString('adminName', 'Dr. Aprajita Chauhan');
                                   if (rememberPassword) {
                                     prefs.setString('userId', userId);
                                     prefs.setString('password', password);
@@ -173,9 +169,7 @@ class _AdminLoginState extends State<AdminLogin> {
                               },
                               child: Text(
                                 'Log In',
-                                style: TextStyle(color: Colors.teal,
-                                  ),
-
+                                style: TextStyle(color: Colors.white),
                               ),
                             ),
                           ],
@@ -193,6 +187,7 @@ class _AdminLoginState extends State<AdminLogin> {
                     style: TextStyle(
                       fontStyle: FontStyle.italic,
                       fontSize: 12,
+                      color: Colors.white
                     ),
                   ),
                 ),
@@ -204,6 +199,7 @@ class _AdminLoginState extends State<AdminLogin> {
     );
   }
 }
+
 
 class CurvedPainter extends CustomPainter {
   @override
@@ -227,7 +223,6 @@ class CurvedPainter extends CustomPainter {
     return false;
   }
 }
-
 class AdminDashboard extends StatefulWidget {
   @override
   _AdminDashboardState createState() => _AdminDashboardState();
@@ -240,7 +235,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Map<String, dynamic>? selectedData;
   final startDateController = TextEditingController();
   final endDateController = TextEditingController();
-  final remarksController = TextEditingController();
   String errorMessage = '';
   String adminName = '';
 
@@ -248,12 +242,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void initState() {
     super.initState();
     _loadAdminName();
+    _initializeDates();
   }
 
   void _loadAdminName() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      adminName = prefs.getString('adminName') ?? '';
+      adminName = prefs.getString('adminName') ?? 'Admin';
+    });
+  }
+
+  void _initializeDates() {
+    DateTime now = DateTime.now();
+    setState(() {
+      startDate = now;
+      endDate = now;
+      startDateController.text = "${now.toLocal()}".split(' ')[0];
+      endDateController.text = "${now.toLocal()}".split(' ')[0];
     });
   }
 
@@ -307,195 +312,247 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
         setState(() {
           dataList = jsonResponse.map((data) => {
+            'imageId':data['imageId'],
             'floorId': data['floorId'],
             'primaryImage': data['primaryImage'],
             'secondaryImage': data['secondaryImage'],
             'description': data['description'],
+            'imageStatus': data['imageStatus'],
+            'remark': data['remark'],
           }).toList();
+          selectedData = null;
         });
       } else {
         setState(() {
-          errorMessage = 'Failed to load data: ${response.statusCode}';
-        });
-        print('Failed to load data: ${response.statusCode}');
-      }
-    } catch (e) {
-      setState(() {
-        errorMessage = 'An error occurred while fetching data.';
-      });
-      print('Error fetching data: $e');
-    }
-  }
-
-  void navigateToFullScreenImage(String imageBase64, String remarks) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => FullScreenImagePage(imageBase64: imageBase64, remarks: remarks),
-      ),
-    );
-  }
-
-  void submitRemarks() async {
-    if (selectedData == null) {
-      setState(() {
-        errorMessage = 'Please select an image to submit remarks.';
-      });
-      return;
-    }
-
-    String remarks = remarksController.text;
-    String floorId = selectedData!['floorId'];
-
-    final url = 'http://192.168.1.196:8081/api/Application/SubmitRemarks';
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'floorId': floorId, 'remarks': remarks}),
-      );
-
-      if (response.statusCode == 200) {
-        setState(() {
-          errorMessage = 'Remarks submitted successfully';
-        });
-      } else {
-        setState(() {
-          errorMessage = 'Failed to submit remarks: ${response.statusCode}';
+          errorMessage = 'Error fetching data: ${response.statusCode}';
         });
       }
-    } catch (e) {
+    } catch (error) {
       setState(() {
-        errorMessage = 'An error occurred while submitting remarks.';
+        errorMessage = 'An error occurred: $error';
       });
     }
-  }
-
-  void _logout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool('isLoggedIn', false);
-    prefs.remove('adminName');
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => AdminLogin()),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Admin Dashboard'),
+        title: Text('Admin Dashboard',  style: TextStyle(color: Colors.teal, fontFamily: 'Poppins', fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
             icon: Icon(Icons.logout),
-            onPressed: _logout,
+            onPressed: () async {
+              SharedPreferences prefs = await SharedPreferences.getInstance();
+              prefs.remove('isLoggedIn');
+              prefs.remove('adminName');
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => AdminLogin()),
+              );
+            },
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            Text('Welcome, $adminName'),
-            SizedBox(height: 10),
-            TextFormField(
-              controller: startDateController,
-              decoration: InputDecoration(
-                labelText: 'Start Date',
-                prefixIcon: Icon(Icons.calendar_today),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            children: [
+              Text('Welcome, $adminName', style: TextStyle(fontSize: 20,fontFamily: 'Poppins', color: Colors.black)),
+              SizedBox(height: 20),
+              TextField(
+                controller: startDateController,
+                decoration: InputDecoration(
+                  labelText: 'Start Date',
+                  prefixIcon: Icon(Icons.calendar_today),
+                  border: OutlineInputBorder(),
+                ),
+                readOnly: true,
+                onTap: () => selectStartDate(context),
               ),
-              readOnly: true,
-              onTap: () => selectStartDate(context),
-            ),
-            SizedBox(height: 10),
-            TextFormField(
-              controller: endDateController,
-              decoration: InputDecoration(
-                labelText: 'End Date',
-                prefixIcon: Icon(Icons.calendar_today),
+              SizedBox(height: 20),
+              TextField(
+                controller: endDateController,
+                decoration: InputDecoration(
+                  labelText: 'End Date',
+                  prefixIcon: Icon(Icons.calendar_today),
+                  border: OutlineInputBorder(),
+                ),
+                readOnly: true,
+                onTap: () => selectEndDate(context),
               ),
-              readOnly: true,
-              onTap: () => selectEndDate(context),
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: fetchData,
-              child: Text('Get Data'),
-            ),
-            SizedBox(height: 10),
-            if (errorMessage.isNotEmpty)
-              Text(
-                errorMessage,
-                style: TextStyle(color: Colors.red),
-              ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: dataList.length,
-                itemBuilder: (context, index) {
-                  final data = dataList[index];
-                  return ListTile(
-                    title: Text('Floor Id: ${data['floorId']}'),
-                    subtitle: Text(data['description']),
-                    onTap: () {
-                      setState(() {
-                        selectedData = data;
-                      });
-                      navigateToFullScreenImage(data['primaryImage'], data['description']);
-                    },
-                  );
-                },
-              ),
-            ),
-            SizedBox(height: 10),
-            if (selectedData != null)
-              Column(
-                children: [
-                  Text('Selected Floor Id: ${selectedData!['floorId']}'),
-                  TextField(
-                    controller: remarksController,
-                    decoration: InputDecoration(
-                      labelText: 'Remarks',
-                      prefixIcon: Icon(Icons.comment),
-                    ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18.0),
                   ),
-                  ElevatedButton(
-                    onPressed: submitRemarks,
-                    child: Text('Submit Remarks'),
-                  ),
-                ],
+                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                ),
+                onPressed: fetchData,
+                child: Text('Get Data', style: TextStyle(color: Colors.white)),
               ),
-          ],
+              SizedBox(height: 20),
+              if (errorMessage.isNotEmpty)
+                Text(
+                  errorMessage,
+                  style: TextStyle(color: Colors.red),
+                ),
+              if (dataList.isNotEmpty)
+                SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      SizedBox(height: 20),
+                      Text('Data List:', style: TextStyle(fontSize: 16)),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: dataList.length,
+                        itemBuilder: (context, index) {
+                          final data = dataList[index];
+                          return ListTile(
+                            title: Text('Floor ID: ${data['floorId']}'),
+                            subtitle: Text('Description: ${data['description']}'),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => DetailScreen(data: data),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class FullScreenImagePage extends StatelessWidget {
-  final String imageBase64;
-  final String remarks;
+class DetailScreen extends StatefulWidget {
+  final Map<String, dynamic> data;
 
-  FullScreenImagePage({required this.imageBase64, required this.remarks});
+  DetailScreen({required this.data});
+
+  @override
+  _DetailScreenState createState() => _DetailScreenState();
+}
+
+class _DetailScreenState extends State<DetailScreen> {
+  final remarksController = TextEditingController();
+  String errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    remarksController.text = widget.data['remarks'] ?? '';
+  }
+
+  Uint8List _convertBase64ToImage(String base64String) {
+    return base64Decode(base64String);
+  }
+
+  void updateRemarks() async {
+    final imageId = widget.data['imageId'];
+    final url = 'http://192.168.1.196:8081/api/Application/UpdateHousekeepingImage?ImageId=$imageId';
+    final body = jsonEncode({
+      'imageId': imageId,
+      'remark': remarksController.text,
+    });
+
+    print('Sending PATCH request to: $url');
+    print('Request body: $body');
+
+    try {
+      final response = await http.patch(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        setState(() {
+          errorMessage = 'Remarks updated successfully.';
+          widget.data['remarks'] = remarksController.text;
+          widget.data['primaryImage'] = null;
+          widget.data['secondaryImage'] = null;
+        });
+      } else {
+        setState(() {
+          errorMessage = 'Error updating remarks: ${response.statusCode} - ${response.body}';
+        });
+      }
+    } catch (error) {
+      setState(() {
+        errorMessage = 'An error occurred: $error';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final decodedBytes = base64Decode(imageBase64);
-
     return Scaffold(
       appBar: AppBar(
-        title: Text('Full Screen Image'),
+        title: Text('Detail', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold,color: Colors.teal)),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            Expanded(
-              child: Image.memory(decodedBytes),
-            ),
-            SizedBox(height: 10),
-            Text('Remarks: $remarks'),
-          ],
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Floor ID: ${widget.data['floorId']}', style: TextStyle(fontSize: 18)),
+              SizedBox(height: 10),
+              Text('Description: ${widget.data['description']}', style: TextStyle(fontSize: 16)),
+              SizedBox(height: 10),
+              widget.data['primaryImage'] != null
+                  ? Image.memory(_convertBase64ToImage(widget.data['primaryImage']))
+                  : Text('No primary image available'),
+              SizedBox(height: 10),
+              widget.data['secondaryImage'] != null
+                  ? Image.memory(_convertBase64ToImage(widget.data['secondaryImage']))
+                  : Text('No secondary image available'),
+              SizedBox(height: 20),
+              TextField(
+                controller: remarksController,
+                decoration: InputDecoration(
+                  labelText: 'Remarks',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18.0),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                ),
+                onPressed: updateRemarks,
+                child: Text('Update Remarks', style: TextStyle(color: Colors.white)),
+              ),
+              if (errorMessage.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 20),
+                  child: Text(
+                    errorMessage,
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

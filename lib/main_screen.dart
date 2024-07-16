@@ -113,9 +113,23 @@ class _MainScreenState extends State<MainScreen> {
       var response = await request.send();
       var responseData = await response.stream.bytesToString();
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Data submitted successfully'),
-        ));
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Success'),
+              content: Text('Data submitted successfully'),
+              actions: [
+                TextButton(
+                  child: Text('OK'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
         setState(() {
           _images.clear();
           _descriptionController.clear();
@@ -146,7 +160,7 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: Text('Sanitation for Safety', style: TextStyle(color: Colors.teal, fontFamily: 'Poppins', fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
-        iconTheme: IconThemeData(color: Colors.teal),
+        iconTheme: IconThemeData(color: Colors.black),
       ),
       // drawer: Drawer(
       //   child: Column(
@@ -237,7 +251,7 @@ class _MainScreenState extends State<MainScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('Select Floor', style: TextStyle(fontSize: 18, color: Colors.teal,fontFamily: 'Poppins')),
+                  Text('Select Floor', style: TextStyle(fontSize: 18, color: Colors.black45,fontFamily: 'Poppins')),
                   SizedBox(height: 10),
                   Container(
                     width: double.infinity,
@@ -252,9 +266,7 @@ class _MainScreenState extends State<MainScreen> {
                       borderRadius: BorderRadius.circular(15),
                       onChanged: (String? newValue) {
                         setState(() {
-
                           _selectedFloor = newValue!;
-
                         });
                       },
                       items: _floors.map<DropdownMenuItem<String>>((floor) {
@@ -264,20 +276,24 @@ class _MainScreenState extends State<MainScreen> {
                         );
                       }).toList(),
                       isExpanded: true,
-                      underline: SizedBox.shrink(),
+                      // underline: SizedBox.shrink(),
+                      // decoration: InputDecoration(
+                      //   contentPadding: EdgeInsets.only(top: 16),
+                      //   border: InputBorder.none,
+                      // ),
                       style: TextStyle(color: Colors.white, fontSize: 16),
                       dropdownColor: Colors.teal,
                       iconEnabledColor: Colors.white,
                     ),
                   ),
                   SizedBox(height: 20),
-                  Text('Add Images', style: TextStyle(fontSize: 18, color: Colors.teal,fontFamily: 'Poppins')),
+                  Text('Add Images', style: TextStyle(fontSize: 18, color: Colors.black45,fontFamily: 'Poppins')),
                   SizedBox(height: 10),
                   Container(
                     width: double.infinity,
                     height: 100,
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.teal),
+                      border: Border.all(color: Colors.black45),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
@@ -318,7 +334,7 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                   ),
                   SizedBox(height: 20),
-                  Text('Description', style: TextStyle(fontSize: 18, color: Colors.teal,fontFamily: 'Poppins')),
+                  Text('Description', style: TextStyle(fontSize: 18, color: Colors.black45,fontFamily: 'Poppins')),
                   SizedBox(height: 10),
                   TextField(
                     controller: _descriptionController,

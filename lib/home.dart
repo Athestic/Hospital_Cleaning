@@ -57,7 +57,7 @@ class HomeScreen extends StatelessWidget {
                     },
                   ),
                   ListTile(
-                    leading: Icon(Icons.login, color: Colors.teal),
+                    leading: Icon(Icons.report_problem_rounded, color: Colors.teal),
                     title: Text('Complaint', style: TextStyle(color: Colors.teal)),
                     onTap: () {
                       Navigator.push(
@@ -67,7 +67,7 @@ class HomeScreen extends StatelessWidget {
                     },
                   ),
                   ListTile(
-                    leading: Icon(Icons.login, color: Colors.teal),
+                    leading: Icon(Icons.person, color: Colors.teal),
                     title: Text('Admin ', style: TextStyle(color: Colors.teal)),
                     onTap: () {
                       Navigator.push(
@@ -118,11 +118,13 @@ class HomeScreen extends StatelessWidget {
           children: <Widget>[
             Text(
               'Welcome to Rama Hospital',
+              textAlign: TextAlign.justify,
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold,fontFamily: 'Poppins', color: Colors.teal),
             ),
             SizedBox(height: 10),
             Text(
               'Rama Hospital is dedicated to providing excellent healthcare services. Our mission is to ensure a clean, safe, and welcoming environment for all our patients, visitors, and staff. Together, we can maintain the highest standards of hygiene and cleanliness.',
+              textAlign: TextAlign.justify,
               style: TextStyle(fontSize: 16,fontFamily: 'Poppins', color: Colors.black),
             ),
             SizedBox(height: 20),
@@ -140,17 +142,18 @@ class HomeScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Image.asset('assets/house.jpg', width:100, height: 100),
+                  Image.asset('assets/housekeeper.jpg', width:100, height: 100),
                   SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Name of the Performer',
+                        'Pushpendra Kumar Singh',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        'A mini description about performer',
+                        'He is very good at his work and \n very hardworking.He does his \n work on time',
+                         textAlign: TextAlign.justify,
                         style: TextStyle(fontSize: 14, color: Colors.grey),
                       ),
                     ],
@@ -165,7 +168,7 @@ class HomeScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.teal,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red, width: 2),
+                //border: Border.all(color: Colors.red, width: 2),
               ),
               child: Column(
                 children: [
@@ -184,8 +187,8 @@ class HomeScreen extends StatelessWidget {
                     },
                     child: Text('Join Now'),
                     style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      backgroundColor: Colors.teal,
+                      foregroundColor: Colors.teal,
+                      backgroundColor: Colors.white,
                       padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                     ),
                   ),
