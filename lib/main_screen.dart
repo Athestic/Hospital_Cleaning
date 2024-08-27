@@ -3,8 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'dart:convert';
-import 'admin_login.dart';
-import 'about.dart';
+import 'app_config.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -15,6 +14,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<File> _images = [];
   final picker = ImagePicker();
   String _selectedFloor = '';
+  String _selectedGda = '';
   final TextEditingController _descriptionController = TextEditingController();
   bool _isSubmitting = false;
   List<Map<String, dynamic>> _floors = [];
@@ -26,7 +26,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _fetchFloors() async {
-    var uri = Uri.parse('http://192.168.1.196:8081/api/Housekeeping/GetHouseKeeping');
+    var uri = Uri.parse('${AppConfig.apiUrl}${AppConfig.houseKeepingEndpoint}');
     var response = await http.get(uri);
 
     if (response.statusCode == 200) {
@@ -35,6 +35,7 @@ class _MainScreenState extends State<MainScreen> {
         _floors = List<Map<String, dynamic>>.from(data);
         if (_floors.isNotEmpty) {
           _selectedFloor = _floors[0]['location'];
+          _selectedGda = _floors[0]['gda'];
         }
       });
     } else {
@@ -69,6 +70,7 @@ class _MainScreenState extends State<MainScreen> {
       return {
         'floorId': null,
         'description': _descriptionController.text,
+        'gda': _selectedGda,
         'images': _images.map((image) => image.path).toList(),
       };
     }
@@ -76,6 +78,7 @@ class _MainScreenState extends State<MainScreen> {
     return {
       'floorId': selectedFloorData['floor_id'].toString(),
       'description': _descriptionController.text,
+      'gda': _selectedGda,
       'images': _images.map((image) => image.path).toList(),
     };
   }
@@ -96,11 +99,12 @@ class _MainScreenState extends State<MainScreen> {
 
     print('Payload: $payload');
 
-    var uri = Uri.parse('http://192.168.1.196:8081/api/Application/InsertHouseImage');
+    var uri = Uri.parse('${AppConfig.apiUrl}${AppConfig.insertHouseImageEndpoint}');
     var request = http.MultipartRequest('POST', uri);
 
     request.fields['floorId'] = payload['floorId'];
     request.fields['description'] = payload['description'];
+    request.fields['gda'] = payload['gda'];
 
     for (int i = 0; i < _images.length; i++) {
       request.files.add(await http.MultipartFile.fromPath(
@@ -134,6 +138,7 @@ class _MainScreenState extends State<MainScreen> {
           _images.clear();
           _descriptionController.clear();
           _selectedFloor = _floors.isNotEmpty ? _floors[0]['location'] : '';
+          _selectedGda = _floors.isNotEmpty ? _floors[0]['gda'] : '';
           _isSubmitting = false;
         });
       } else {
@@ -162,88 +167,10 @@ class _MainScreenState extends State<MainScreen> {
         backgroundColor: Colors.white,
         iconTheme: IconThemeData(color: Colors.black),
       ),
-      // drawer: Drawer(
-      //   child: Column(
-      //     children: <Widget>[
-      //       Container(
-      //         width: double.infinity,
-      //         color: Colors.teal,
-      //         padding: const EdgeInsets.all(30.0),
-      //         child: Column(
-      //           crossAxisAlignment: CrossAxisAlignment.start,
-      //           children: [
-      //             Padding(
-      //               padding: const EdgeInsets.only(top: 30.0),
-      //               child: ClipOval(
-      //                 child: Image.asset(
-      //                   'assets/rcs.jpg',
-      //                   width: 80,
-      //                   height: 80,
-      //                   fit: BoxFit.cover,
-      //                 ),
-      //               ),
-      //             ),
-      //             SizedBox(height: 20),
-      //             Text(
-      //               'Rcs Global Pvt. Ltd.',
-      //               style: TextStyle(color: Colors.white,fontFamily: 'Poppins', fontSize: 20),
-      //             ),
-      //           ],
-      //         ),
-      //       ),
-      //       Expanded(
-      //         child:
-      //         ListView(
-      //           padding: EdgeInsets.zero,
-      //           children: <Widget>[
-      //             ListTile(
-      //               leading: Icon(Icons.login, color: Colors.teal),
-      //               title: Text('Complaint', style: TextStyle(color: Colors.teal)),
-      //               onTap: () {
-      //                 Navigator.push(
-      //                   context,
-      //                   MaterialPageRoute(builder: (context) => MainScreen()),
-      //                 );
-      //               },
-      //             ),
-      //             ListTile(
-      //               leading: Icon(Icons.login, color: Colors.teal),
-      //               title: Text('Admin ', style: TextStyle(color: Colors.teal)),
-      //               onTap: () {
-      //                 Navigator.push(
-      //                   context,
-      //                   MaterialPageRoute(builder: (context) => AdminLogin()),
-      //                 );
-      //               },
-      //             ),
-      //             ListTile(
-      //               leading: Icon(Icons.info, color: Colors.teal),
-      //               title: Text('About', style: TextStyle(color: Colors.teal)),
-      //               onTap: () {
-      //                 Navigator.push(
-      //                   context,
-      //                   MaterialPageRoute(builder: (context) => AboutPage()),
-      //                 );
-      //               },
-      //             ),
-      //           ],
-      //         ),
-      //       ),
-      //       Padding(
-      //         padding: const EdgeInsets.all(16.0),
-      //         child: Text(
-      //           '© 2024 Rcs Global Pvt. Ltd.',
-      //           style: TextStyle(color: Colors.grey,fontFamily: 'Poppins'),
-      //         ),
-      //       ),
-      //     ],
-      //   ),
-      // ),
       body: Stack(
         children: [
           CustomPaint(
             size: Size(double.infinity, double.infinity),
-            // painter: CurvedPainter(),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -251,7 +178,7 @@ class _MainScreenState extends State<MainScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('Select Floor', style: TextStyle(fontSize: 18, color: Colors.black45,fontFamily: 'Poppins')),
+                  Text('Select Floor', style: TextStyle(fontSize: 18, color: Colors.black45, fontFamily: 'Poppins')),
                   SizedBox(height: 10),
                   Container(
                     width: double.infinity,
@@ -267,27 +194,23 @@ class _MainScreenState extends State<MainScreen> {
                       onChanged: (String? newValue) {
                         setState(() {
                           _selectedFloor = newValue!;
+                          _selectedGda = _floors.firstWhere((floor) => floor['location'] == newValue)['gda'];
                         });
                       },
                       items: _floors.map<DropdownMenuItem<String>>((floor) {
                         return DropdownMenuItem<String>(
                           value: floor['location'],
-                          child: Text(floor['location']),
+                          child: Text('${floor['location']} (${floor['gda']})'),
                         );
                       }).toList(),
                       isExpanded: true,
-                      // underline: SizedBox.shrink(),
-                      // decoration: InputDecoration(
-                      //   contentPadding: EdgeInsets.only(top: 16),
-                      //   border: InputBorder.none,
-                      // ),
                       style: TextStyle(color: Colors.white, fontSize: 16),
                       dropdownColor: Colors.teal,
                       iconEnabledColor: Colors.white,
                     ),
                   ),
                   SizedBox(height: 20),
-                  Text('Add Images', style: TextStyle(fontSize: 18, color: Colors.black45,fontFamily: 'Poppins')),
+                  Text('Add Images', style: TextStyle(fontSize: 18, color: Colors.black45, fontFamily: 'Poppins')),
                   SizedBox(height: 10),
                   Container(
                     width: double.infinity,
@@ -308,7 +231,7 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     ),
                   ),
-                  Text('Add more images', style: TextStyle(color: Colors.teal,fontFamily: 'Poppins')),
+                  Text('Add more images', style: TextStyle(color: Colors.teal, fontFamily: 'Poppins')),
                   SizedBox(height: 20),
                   Container(
                     padding: const EdgeInsets.all(8.0),
@@ -334,7 +257,7 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                   ),
                   SizedBox(height: 20),
-                  Text('Description', style: TextStyle(fontSize: 18, color: Colors.black45,fontFamily: 'Poppins')),
+                  Text('Description', style: TextStyle(fontSize: 18, color: Colors.black45, fontFamily: 'Poppins')),
                   SizedBox(height: 10),
                   TextField(
                     controller: _descriptionController,

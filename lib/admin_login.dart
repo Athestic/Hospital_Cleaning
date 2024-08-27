@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:typed_data';
+import 'app_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +23,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.teal),
-      home: isLoggedIn ?   AdminLogin():AdminDashboard(),
+      home: isLoggedIn ? AdminDashboard() : AdminLogin(),
+
     );
   }
 }
@@ -147,10 +149,18 @@ class _AdminLoginState extends State<AdminLogin> {
                                 String userId = emailController.text;
                                 String password = passwordController.text;
 
-                                if (userId == 'admin@123' && password == 'rama@123') {
+                                if ((userId == 'admin' && password == 'rama@12') ) {
                                   SharedPreferences prefs = await SharedPreferences.getInstance();
-                                  prefs.setBool('isLoggedIn', true);
-                                  prefs.setString('adminName', 'Dr. Aprajita Chauhan');
+                                  prefs.setBool('isLoggedIn', true); // Set the login flag to true
+
+                                  // Set the admin name based on the logged-in user
+                                  if (userId == 'admin') {
+                                    prefs.setString('adminName', 'to MediClean');
+                                  // } else if (userId == 'Admin') {
+                                  //   prefs.setString('adminName', 'Dr. Preeti Singh'
+                                  //   );
+                                  }
+
                                   if (rememberPassword) {
                                     prefs.setString('userId', userId);
                                     prefs.setString('password', password);
@@ -303,7 +313,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
 
     final url =
-        'http://192.168.1.196:8081/api/Application/GetHouseImageByDateRange?startDate=${startDate!.toIso8601String()}&endDate=${endDate!.toIso8601String()}';
+        '${AppConfig.apiUrl}${AppConfig.getHouseImageByDateRangeEndpoint}?startDate=${startDate!.toIso8601String()}&endDate=${endDate!.toIso8601String()}';
     try {
       final response = await http.get(Uri.parse(url));
 
@@ -312,11 +322,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
         setState(() {
           dataList = jsonResponse.map((data) => {
-            'imageId':data['imageId'],
+            'imageId': data['imageId'],
             'floorId': data['floorId'],
             'primaryImage': data['primaryImage'],
             'secondaryImage': data['secondaryImage'],
             'description': data['description'],
+            'gda': data['gda'], // Corrected key name
             'imageStatus': data['imageStatus'],
             'remark': data['remark'],
           }).toList();
@@ -324,7 +335,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         });
       } else {
         setState(() {
-          errorMessage = 'Error fetching data: ${response.statusCode}';
+          errorMessage = 'Image not found: ${response.statusCode}';
         });
       }
     } catch (error) {
@@ -338,7 +349,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Admin Dashboard',  style: TextStyle(color: Colors.teal, fontFamily: 'Poppins', fontWeight: FontWeight.bold)),
+        title: Text(
+          'Admin Dashboard',
+          style: TextStyle(color: Colors.teal, fontFamily: 'Poppins', fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.logout),
@@ -359,7 +373,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
-              Text('Welcome, $adminName', style: TextStyle(fontSize: 20,fontFamily: 'Poppins', color: Colors.black)),
+              Text('Welcome, $adminName', style: TextStyle(fontSize: 20, fontFamily: 'Poppins', color: Colors.black)),
               SizedBox(height: 20),
               TextField(
                 controller: startDateController,
@@ -391,7 +405,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                   padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                 ),
-                onPressed: fetchData,
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Fetching data...'),
+                    ),
+                  );
+                  fetchData();
+                },
                 child: Text('Get Data', style: TextStyle(color: Colors.white)),
               ),
               SizedBox(height: 20),
@@ -412,17 +433,30 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         itemCount: dataList.length,
                         itemBuilder: (context, index) {
                           final data = dataList[index];
-                          return ListTile(
-                            title: Text('Floor ID: ${data['floorId']}'),
-                            subtitle: Text('Description: ${data['description']}'),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => DetailScreen(data: data),
-                                ),
-                              );
-                            },
+                          return Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.teal),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            margin: EdgeInsets.symmetric(vertical: 5),
+                            child: ListTile(
+                              title: Text('Floor ID: ${data['floorId']}'),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Description: ${data['description']}'),
+                                  Text('GDA: ${data['gda']}'),
+                                ],
+                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DetailScreen(data: data),
+                                  ),
+                                );
+                              },
+                            ),
                           );
                         },
                       ),
@@ -436,6 +470,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 }
+
 
 class DetailScreen extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -462,7 +497,7 @@ class _DetailScreenState extends State<DetailScreen> {
 
   void updateRemarks() async {
     final imageId = widget.data['imageId'];
-    final url = 'http://192.168.1.196:8081/api/Application/UpdateHousekeepingImage?ImageId=$imageId';
+    final url = '${AppConfig.apiUrl}${AppConfig.updateHousekeepingImageEndpoint}?ImageId=$imageId';
     final body = jsonEncode({
       'imageId': imageId,
       'remark': remarksController.text,
@@ -515,6 +550,7 @@ class _DetailScreenState extends State<DetailScreen> {
               Text('Floor ID: ${widget.data['floorId']}', style: TextStyle(fontSize: 18)),
               SizedBox(height: 10),
               Text('Description: ${widget.data['description']}', style: TextStyle(fontSize: 16)),
+              Text('Gda: ${widget.data['gda']}', style: TextStyle(fontSize: 16)),
               SizedBox(height: 10),
               widget.data['primaryImage'] != null
                   ? Image.memory(_convertBase64ToImage(widget.data['primaryImage']))

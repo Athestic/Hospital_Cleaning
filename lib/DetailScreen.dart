@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'app_config.dart';
 
 class DetailScreen extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -22,7 +23,7 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   void updateRemarks() async {
-    final url = 'http://192.168.1.196:8081/api/Application/UpdateHousekeepingImage?ImageId=${widget.data['floorId']}';
+    final url = '${AppConfig.apiUrl}${AppConfig.updateHousekeepingImageEndpoint}?ImageId=${widget.data['floorId']}';
     final body = jsonEncode({
       'floorId': widget.data['floorId'],
       'remarks': remarksController.text,

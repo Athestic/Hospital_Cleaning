@@ -53,7 +53,7 @@ dev_dependencies:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/house_logo.png"
+
 
 
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -78,13 +78,13 @@ flutter:
   assets:
      - "assets/splash_animation/ani_housekeeping.json"
      - "assets/rcs.jpg"
-     - "assets/house_logo.png"
+
      - "assets/cleaner.png"
      - "assets/rcslogo.png"
      - "assets/ramalogo.png"
-     - "assets/house.jpg"
      - "assets/housekeeper.jpg"
-     - "assets/complaint.png"
+     - "assets/G.png"
+
 
     # To add assets to your application, add an assets section, like this:
   # assets:

@@ -37,14 +37,14 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
           ),
           Spacer(flex: 3), // Pushes the text to the bottom
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Rcs Global Pvt. Ltd.',
-              style: TextStyle(color: Colors.white, fontSize: 24, fontStyle: FontStyle.italic
-              ),
-            ),
-          ),
+          // Padding(
+          //   padding: const EdgeInsets.all(16.0),
+          //   child: Text(
+          //     'Rcs Global Pvt. Ltd.',
+          //     style: TextStyle(color: Colors.white, fontSize: 24, fontStyle: FontStyle.italic
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
